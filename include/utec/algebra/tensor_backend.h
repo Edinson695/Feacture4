@@ -1,19 +1,22 @@
-//
-// Created by rudri on 10/11/2020.
-//
+#ifndef PROG3_PF_EPIC1_FEATURE4_V2026_01_TENSOR_BACKEND_H
+#define PROG3_PF_EPIC1_FEATURE4_V2026_01_TENSOR_BACKEND_H
 
-#ifndef PROG3_PF_EPIC1_FEATURE1_V2026_01_TENSOR_BACKEND_H
-#define PROG3_PF_EPIC1_FEATURE1_V2026_01_TENSOR_BACKEND_H
-
-//#include <Eigen/Dense> 
-#include "../../third_party/eigen/Eigen/Dense"
+#include <Eigen/Dense> //Para gradescope
+//#include "../../third_party/eigen/Eigen/Dense" //para mi
 #include <cstddef>
 #include <span>
 #include <stdexcept>
 #include <vector>
 #include "utec/algebra/shape.h"
+#include <cmath>
 
 namespace utec::tf {
+    struct FitOptions {
+        int epochs = 1;
+        float learning_rate = 0.01f;
+        int batch_size = 32;
+    };
+
     template <typename T>
     class Tensor {
     public:
@@ -27,6 +30,7 @@ namespace utec::tf {
         [[nodiscard]] std::size_t rank() const noexcept;
         [[nodiscard]] std::size_t numel() const noexcept;
         [[nodiscard]] std::size_t size() const noexcept;
+        [[nodiscard]] Tensor reshaped(const Shape& new_shape) const;
         template <typename... Ix>
         T& operator()(Ix... indices);
         template <typename... Ix>
@@ -203,7 +207,33 @@ namespace utec::tf {
     std::size_t Tensor<T>::size() const noexcept {
         return shape_.numel(); // O simplemente return numel();
     }
-}
 
+    template<typename T>
+    Tensor<T> Tensor<T>::reshaped(const Shape& new_shape) const {
+        if (new_shape.numel() != numel()) {
+            throw std::invalid_argument("reshaped: incomplatible: la cantidad de elementos no coincide");
+        }
+
+        Tensor<T> out = *this;
+
+        out.shape_ = new_shape;
+        return out;
+    }
+
+    template<typename T>
+    bool allclose(const Tensor<T>& a, const Tensor<T>& b, T epsilon = 1e-5f) {
+        if (!(a.shape() == b.shape())) {
+            return false;
+        }
+        for (std::size_t i = 0; i < a.numel(); ++i) {
+             if (std::abs(a[i] - b[i]) > epsilon) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+}
+using namespace utec::tf;
 
 #endif 
